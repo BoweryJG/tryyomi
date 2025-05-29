@@ -826,40 +826,56 @@
             
             // Create more realistic tooth shapes
             if (type === 'molar') {
-                // Molars have a wider crown with cusps
-                const shape = new THREE.Shape()
-                shape.moveTo(0.4, 0)
-                shape.bezierCurveTo(0.4, 0.2, 0.3, 0.3, 0.2, 0.3)
-                shape.bezierCurveTo(0.1, 0.3, 0, 0.2, 0, 0)
-                shape.bezierCurveTo(0, -0.2, -0.1, -0.3, -0.2, -0.3)
-                shape.bezierCurveTo(-0.3, -0.3, -0.4, -0.2, -0.4, 0)
-                shape.bezierCurveTo(-0.4, 0.2, -0.3, 0.3, -0.2, 0.3)
-                shape.bezierCurveTo(-0.1, 0.3, 0, 0.2, 0, 0)
+                // Molars - wider with multiple cusps
+                geometry = new THREE.CylinderGeometry(0.35, 0.4, 0.8, 8)
                 
-                geometry = new THREE.ExtrudeGeometry(shape, {
-                    depth: 0.8,
-                    bevelEnabled: true,
-                    bevelThickness: 0.1,
-                    bevelSize: 0.05,
-                    bevelSegments: 8
-                })
-                geometry.rotateX(-Math.PI / 2)
-                geometry.translate(0, 0.4, 0)
+                // Add cusps by modifying vertices
+                const positions = geometry.attributes.position
+                for (let i = 0; i < positions.count; i++) {
+                    const y = positions.getY(i)
+                    if (y > 0.2) {
+                        const x = positions.getX(i)
+                        const z = positions.getZ(i)
+                        const angle = Math.atan2(z, x)
+                        const cuspPattern = Math.sin(angle * 4) * 0.1
+                        positions.setY(i, y + cuspPattern)
+                    }
+                }
             } else if (type === 'premolar') {
-                // Premolars are smaller with two cusps
-                geometry = new THREE.CapsuleGeometry(0.25, 0.9, 8, 12)
-                geometry.scale(1, 1, 0.8)
-            } else if (type === 'canine') {
-                // Canines are pointed
-                const coneGeo = new THREE.ConeGeometry(0.25, 0.8, 8)
-                const cylinderGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.4, 8)
-                cylinderGeo.translate(0, -0.6, 0)
+                // Premolars - smaller with two cusps
+                geometry = new THREE.CylinderGeometry(0.25, 0.3, 0.9, 6)
                 
-                geometry = BufferGeometryUtils.mergeGeometries([coneGeo, cylinderGeo])
+                // Add two cusps
+                const positions = geometry.attributes.position
+                for (let i = 0; i < positions.count; i++) {
+                    const y = positions.getY(i)
+                    if (y > 0.3) {
+                        const x = positions.getX(i)
+                        const cuspPattern = Math.abs(x) * 0.2
+                        positions.setY(i, y + cuspPattern)
+                    }
+                }
+            } else if (type === 'canine') {
+                // Canines - pointed
+                geometry = new THREE.ConeGeometry(0.25, 1.2, 6)
+                geometry.translate(0, 0.6, 0)
             } else {
-                // Incisors are flatter
-                geometry = new THREE.BoxGeometry(0.15, 1, 0.3, 4, 8, 4)
-                geometry.scale(1, 1, 0.8)
+                // Incisors - chisel-shaped
+                geometry = new THREE.BoxGeometry(0.2, 1.1, 0.1, 4, 8, 2)
+                
+                // Round the edges
+                const positions = geometry.attributes.position
+                for (let i = 0; i < positions.count; i++) {
+                    const x = positions.getX(i)
+                    const y = positions.getY(i)
+                    const z = positions.getZ(i)
+                    
+                    // Round the cutting edge
+                    if (y > 0.4) {
+                        const edgeRound = 1 - (y - 0.4) / 0.7
+                        positions.setZ(i, z * edgeRound)
+                    }
+                }
             }
             
             // Add organic variation to all teeth
@@ -903,34 +919,51 @@
             return tooth
         }
         
-        // Place teeth realistically
-        const teethPositions = [
-            { angle: 0.1, radius: 3.2, type: 'incisor' },
-            { angle: 0.3, radius: 3.2, type: 'incisor' },
-            { angle: 0.5, radius: 3.2, type: 'canine' },
-            { angle: 0.7, radius: 3.1, type: 'premolar' },
-            { angle: 0.9, radius: 3.0, type: 'premolar' },
-            { angle: 1.1, radius: 2.9, type: 'molar' },
-            { angle: 1.3, radius: 2.8, type: 'molar' },
-            { angle: 1.8, radius: 2.8, type: 'molar' },
-            { angle: 2.0, radius: 2.9, type: 'molar' },
-            { angle: 2.2, radius: 3.0, type: 'premolar' },
-            { angle: 2.4, radius: 3.1, type: 'premolar' },
-            { angle: 2.6, radius: 3.2, type: 'canine' },
-            { angle: 2.8, radius: 3.2, type: 'incisor' },
-            { angle: 3.0, radius: 3.2, type: 'incisor' },
+        // Place teeth in realistic dental arch
+        const teethPositions = []
+        
+        // Lower jaw dental arch - 16 teeth total (8 per side)
+        // Using parabolic curve for realistic arch shape
+        function getArchPosition(index, total) {
+            const t = (index / (total - 1)) * Math.PI // 0 to PI for half circle
+            const archWidth = 3.5
+            const archDepth = 3.0
+            
+            // Parabolic arch formula for more realistic shape
+            const x = Math.cos(t) * archWidth * (1 - 0.3 * Math.sin(t))
+            const z = Math.sin(t) * archDepth
+            
+            return { x, z }
+        }
+        
+        // Define teeth layout (left to right)
+        const teethLayout = [
+            'molar', 'molar', 'premolar', 'premolar', 'canine', 'incisor', 'incisor', 'incisor',
+            'incisor', 'incisor', 'incisor', 'canine', 'premolar', 'premolar', 'molar', 'molar'
         ]
+        
+        teethLayout.forEach((type, index) => {
+            const pos = getArchPosition(index, teethLayout.length)
+            teethPositions.push({
+                x: pos.x,
+                z: pos.z,
+                type: type,
+                index: index
+            })
+        })
         
         teethPositions.forEach((pos, index) => {
             const tooth = createTooth(pos.type)
-            tooth.position.x = Math.cos(pos.angle) * pos.radius
-            tooth.position.z = Math.sin(pos.angle) * pos.radius
+            tooth.position.x = pos.x
+            tooth.position.z = pos.z
             tooth.position.y = 0.6
-            tooth.rotation.z = (Math.random() - 0.5) * 0.1
-            tooth.rotation.x = (Math.random() - 0.5) * 0.05
             
-            // Skip one tooth for implant site
-            if (index !== 7) {
+            // Slight random rotation for realism
+            tooth.rotation.y = (Math.random() - 0.5) * 0.1
+            tooth.rotation.z = (Math.random() - 0.5) * 0.05
+            
+            // Skip tooth #10 (lower left lateral incisor) for implant site
+            if (index !== 10) {
                 teethGroup.add(tooth)
             }
         })
@@ -1009,10 +1042,12 @@
         sprite.scale.set(2, 0.5, 1)
         targetGroup.add(sprite)
         
+        // Position target at missing tooth location
+        const missingToothPos = teethPositions[10] // Lower left lateral incisor
         targetGroup.position.set(
-            Math.cos(teethPositions[7].angle) * teethPositions[7].radius,
+            missingToothPos.x,
             0.61,
-            Math.sin(teethPositions[7].angle) * teethPositions[7].radius
+            missingToothPos.z
         )
         scene.add(targetGroup)
         
@@ -1039,8 +1074,34 @@
         drillTip.position.y = -1.75
         drillGroup.add(drillTip)
         
+        // Add glowing tip indicator
+        const tipIndicatorGeometry = new THREE.SphereGeometry(0.05, 8, 8)
+        const tipIndicatorMaterial = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.8
+        })
+        const tipIndicator = new THREE.Mesh(tipIndicatorGeometry, tipIndicatorMaterial)
+        tipIndicator.position.y = -2 // At the very tip of the drill
+        drillGroup.add(tipIndicator)
+        
+        // Add laser pointer from tip to show where it will land
+        const laserGeometry = new THREE.CylinderGeometry(0.01, 0.01, 5, 8)
+        const laserMaterial = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.3
+        })
+        const laser = new THREE.Mesh(laserGeometry, laserMaterial)
+        laser.position.y = -4.5 // Extends down from drill tip
+        drillGroup.add(laser)
+        
         drillGroup.position.y = 3
         scene.add(drillGroup)
+        
+        // Store references to important objects
+        const drillTip = tipIndicator
+        const drillLaser = laser
         
         // Game state
         let currentMethod = 'freehand'
@@ -1269,8 +1330,20 @@
         function updateMetrics() {
             if (currentMode === 'explore') return // No metrics in explore mode
             
-            const distance = drillGroup.position.distanceTo(targetPosition)
-            const platformDeviation = distance * 10 // Convert to mm
+            // Calculate drill tip position in world space
+            const drillTipWorld = new THREE.Vector3(
+                drillGroup.position.x,
+                drillGroup.position.y - 2, // Tip is 2 units below drill center
+                drillGroup.position.z
+            )
+            
+            // Get 2D distance (ignoring height) from drill tip to target
+            const distance2D = Math.sqrt(
+                Math.pow(drillTipWorld.x - targetPosition.x, 2) +
+                Math.pow(drillTipWorld.z - targetPosition.z, 2)
+            )
+            
+            const platformDeviation = distance2D * 10 // Convert to mm
             
             // Update UI - MAIN METRIC IS DISTANCE FROM TARGET
             document.getElementById('platformDeviation').textContent = platformDeviation.toFixed(2) + 'mm'
@@ -1285,6 +1358,17 @@
                 platformEl.className = 'metric-value warning'
             } else {
                 platformEl.className = 'metric-value bad'
+            }
+            
+            // Update laser color based on precision
+            if (drillLaser) {
+                if (platformDeviation < 1) {
+                    drillLaser.material.color.setHex(0x00ff00) // Green when close
+                } else if (platformDeviation < 3) {
+                    drillLaser.material.color.setHex(0xffaa00) // Orange when medium
+                } else {
+                    drillLaser.material.color.setHex(0xff0000) // Red when far
+                }
             }
         }
         
@@ -1328,9 +1412,20 @@
             // Challenge mode scoring
             const finalTime = ((Date.now() - startTime) / 1000).toFixed(1)
             
-            // Calculate score based ONLY on distance from target
-            const distance = drillGroup.position.distanceTo(targetPosition)
-            const platformDeviation = distance * 10 // Convert to mm
+            // Calculate score based on DRILL TIP distance from target
+            const drillTipWorld = new THREE.Vector3(
+                drillGroup.position.x,
+                drillGroup.position.y - 2, // Tip is 2 units below drill center
+                drillGroup.position.z
+            )
+            
+            // Get 2D distance (ignoring height) from drill tip to target
+            const distance2D = Math.sqrt(
+                Math.pow(drillTipWorld.x - targetPosition.x, 2) +
+                Math.pow(drillTipWorld.z - targetPosition.z, 2)
+            )
+            
+            const platformDeviation = distance2D * 10 // Convert to mm
             
             // Scoring: Doctors are proud of precision
             let score
@@ -1507,6 +1602,11 @@ Doctors using Yomi consistently achieve <1mm precision - the gold standard in im
             // Rotate drill when placing
             if (isPlacing) {
                 drillGroup.rotation.y += 0.05
+                
+                // Pulse the tip indicator
+                if (drillTip) {
+                    drillTip.material.opacity = 0.6 + Math.sin(Date.now() * 0.01) * 0.3
+                }
             }
             
             renderer.render(scene, camera)
