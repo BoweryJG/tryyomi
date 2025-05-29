@@ -384,6 +384,14 @@
     </style>
 </head>
 <body>
+    <!-- Auth check overlay -->
+    <div id="authCheck" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center;">
+            <h2 style="color: #00ff88; font-size: 24px; margin-bottom: 20px;">Checking authentication...</h2>
+            <div class="loading" style="margin: 0 auto;"></div>
+        </div>
+    </div>
+    
     <canvas id="canvas"></canvas>
     
     <!-- Custom cursor -->
@@ -469,6 +477,43 @@
     <script type="module">
         import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js'
         import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js'
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+        
+        // Supabase configuration
+        const supabaseUrl = 'https://cbopynuvhcymbumjnvay.supabase.co'
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNib3B5bnV2aGN5bWJ1bWpudmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTUxNzMsImV4cCI6MjA1OTU3MTE3M30.UZElMkoHugIt984RtYWyfrRuv2rB67opQdCrFVPCfzU'
+        const supabase = createClient(supabaseUrl, supabaseAnonKey)
+        
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                
+                if (!user) {
+                    // Not authenticated, redirect to home
+                    alert('Please sign in to use the simulator')
+                    window.location.href = 'index.html'
+                    return false
+                }
+                
+                // Hide auth check overlay
+                document.getElementById('authCheck').style.display = 'none'
+                return true
+            } catch (error) {
+                console.error('Auth check failed:', error)
+                window.location.href = 'index.html'
+                return false
+            }
+        }
+        
+        // Only initialize the game if authenticated
+        checkAuth().then(isAuthenticated => {
+            if (isAuthenticated) {
+                initializeSimulation()
+            }
+        })
+        
+        function initializeSimulation() {
         
         // Scene setup
         const scene = new THREE.Scene()
@@ -871,8 +916,36 @@
         }
         
         window.saveResults = async () => {
-            // Save to Supabase if user is logged in
-            alert('Results saved! (Feature coming soon)')
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    const score = parseInt(document.getElementById('scoreDisplay').textContent)
+                    const method = document.getElementById('methodResult').textContent
+                    const precision = document.getElementById('precisionResult').textContent
+                    const time = document.getElementById('timeResult').textContent
+                    
+                    // Save to Supabase (you'll need to create a 'scores' table)
+                    const { error } = await supabase
+                        .from('scores')
+                        .insert({
+                            user_id: user.id,
+                            score: score,
+                            method: method,
+                            precision: precision,
+                            time: time,
+                            created_at: new Date().toISOString()
+                        })
+                    
+                    if (error) {
+                        console.error('Error saving results:', error)
+                        alert('Results saved locally')
+                    } else {
+                        alert('Results saved successfully!')
+                    }
+                }
+            } catch (error) {
+                console.error('Save error:', error)
+            }
             tryAgain()
         }
         
@@ -903,6 +976,8 @@
         
         // Hide cursor
         document.body.style.cursor = 'none'
+        
+        } // End of initializeSimulation
     </script>
 </body>
 </html>

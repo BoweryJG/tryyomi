@@ -584,7 +584,8 @@
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.href
+                        redirectTo: window.location.origin + '/index.html',
+                        scopes: 'email profile'
                     }
                 })
                 if (error) throw error
@@ -599,7 +600,8 @@
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'facebook',
                     options: {
-                        redirectTo: window.location.href
+                        redirectTo: window.location.origin + '/index.html',
+                        scopes: 'email public_profile'
                     }
                 })
                 if (error) throw error
@@ -660,6 +662,7 @@
         
         // Start simulation
         window.startSimulation = () => {
+            // Always require authentication
             if (!currentUser) {
                 openAuthModal()
                 return
