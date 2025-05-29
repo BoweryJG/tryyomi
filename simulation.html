@@ -88,6 +88,36 @@
             transform: translateX(5px);
         }
 
+        /* Mode toggle */
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         /* Metrics */
         .metrics {
             display: flex;
@@ -523,6 +553,10 @@
     <!-- HUD -->
     <div class="hud">
         <div class="hud-panel">
+            <div class="mode-toggle" style="margin-bottom: 20px;">
+                <button class="mode-btn active" onclick="setMode('explore')">🔍 Explore</button>
+                <button class="mode-btn" onclick="setMode('challenge')">🎯 Challenge</button>
+            </div>
             <div class="method-selector">
                 <div class="method-title">SURGICAL METHOD</div>
                 <button class="method-btn active" onclick="setMethod('freehand')">Freehand</button>
@@ -630,6 +664,7 @@
     <script type="module">
         import * as THREE from 'three'
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+        import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
         
         // Supabase configuration from config.js
@@ -788,24 +823,65 @@
         
         function createTooth(type = 'molar') {
             let geometry
+            
+            // Create more realistic tooth shapes
             if (type === 'molar') {
-                geometry = new THREE.CylinderGeometry(0.35, 0.3, 1, 12)
+                // Molars have a wider crown with cusps
+                const shape = new THREE.Shape()
+                shape.moveTo(0.4, 0)
+                shape.bezierCurveTo(0.4, 0.2, 0.3, 0.3, 0.2, 0.3)
+                shape.bezierCurveTo(0.1, 0.3, 0, 0.2, 0, 0)
+                shape.bezierCurveTo(0, -0.2, -0.1, -0.3, -0.2, -0.3)
+                shape.bezierCurveTo(-0.3, -0.3, -0.4, -0.2, -0.4, 0)
+                shape.bezierCurveTo(-0.4, 0.2, -0.3, 0.3, -0.2, 0.3)
+                shape.bezierCurveTo(-0.1, 0.3, 0, 0.2, 0, 0)
+                
+                geometry = new THREE.ExtrudeGeometry(shape, {
+                    depth: 0.8,
+                    bevelEnabled: true,
+                    bevelThickness: 0.1,
+                    bevelSize: 0.05,
+                    bevelSegments: 8
+                })
+                geometry.rotateX(-Math.PI / 2)
+                geometry.translate(0, 0.4, 0)
             } else if (type === 'premolar') {
-                geometry = new THREE.CylinderGeometry(0.3, 0.25, 1.1, 10)
+                // Premolars are smaller with two cusps
+                geometry = new THREE.CapsuleGeometry(0.25, 0.9, 8, 12)
+                geometry.scale(1, 1, 0.8)
+            } else if (type === 'canine') {
+                // Canines are pointed
+                const coneGeo = new THREE.ConeGeometry(0.25, 0.8, 8)
+                const cylinderGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.4, 8)
+                cylinderGeo.translate(0, -0.6, 0)
+                
+                geometry = BufferGeometryUtils.mergeGeometries([coneGeo, cylinderGeo])
             } else {
-                geometry = new THREE.CylinderGeometry(0.25, 0.2, 1.2, 8)
+                // Incisors are flatter
+                geometry = new THREE.BoxGeometry(0.15, 1, 0.3, 4, 8, 4)
+                geometry.scale(1, 1, 0.8)
             }
             
-            // Add some realistic deformation
+            // Add organic variation to all teeth
             const positions = geometry.attributes.position
             for (let i = 0; i < positions.count; i++) {
                 const y = positions.getY(i)
-                if (y > 0) {
-                    const noise = (Math.random() - 0.5) * 0.05
-                    positions.setX(i, positions.getX(i) + noise)
-                    positions.setZ(i, positions.getZ(i) + noise)
+                const x = positions.getX(i)
+                const z = positions.getZ(i)
+                
+                // Smooth the crown with sine wave modulation
+                if (y > 0.3) {
+                    const crownShape = Math.sin(y * Math.PI) * 0.1
+                    positions.setX(i, x * (1 + crownShape))
+                    positions.setZ(i, z * (1 + crownShape))
                 }
+                
+                // Add subtle surface variation
+                const variation = (Math.sin(x * 10) * Math.cos(z * 10)) * 0.02
+                positions.setY(i, y + variation)
             }
+            
+            geometry.computeVertexNormals()
             
             const material = new THREE.MeshPhysicalMaterial({
                 color: 0xFFFFF0,
@@ -968,6 +1044,7 @@
         
         // Game state
         let currentMethod = 'freehand'
+        let currentMode = 'explore'
         let isPlacing = false
         let startTime = 0
         let mouseX = 0, mouseY = 0
@@ -1003,6 +1080,29 @@
             }
         }
         
+        // Mode functions
+        window.setMode = (mode) => {
+            currentMode = mode
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active')
+            })
+            event.target.classList.add('active')
+            
+            if (mode === 'explore') {
+                // Hide metrics in explore mode
+                document.querySelector('.hud-panel:last-child').style.display = 'none'
+                targetGroup.visible = false
+                document.getElementById('instructionText').textContent = 'Explore Mode - Move the drill freely'
+                document.getElementById('controlsText').textContent = 'Experience the different surgical methods without pressure'
+            } else {
+                // Show metrics in challenge mode
+                document.querySelector('.hud-panel:last-child').style.display = 'block'
+                targetGroup.visible = true
+                document.getElementById('instructionText').textContent = 'Challenge Mode - Hit the target!'
+                document.getElementById('controlsText').textContent = 'Test your precision with each method'
+            }
+        }
+
         // Tutorial functions
         window.startTutorial = () => {
             document.getElementById('tutorialOverlay').classList.add('hidden')
@@ -1010,6 +1110,8 @@
             tutorialStep = 1
             setMethodForTutorial('freehand')
             updateTutorialUI()
+            // Start in challenge mode for tutorial
+            setMode('challenge')
         }
 
         function updateTutorialUI() {
@@ -1155,13 +1257,13 @@
         }
         
         function updateMetrics() {
+            if (currentMode === 'explore') return // No metrics in explore mode
+            
             const distance = drillGroup.position.distanceTo(targetPosition)
             const platformDeviation = distance * 10 // Convert to mm
             
             // Update UI - MAIN METRIC IS DISTANCE FROM TARGET
-            document.getElementById('angleDeviation').textContent = '---'
             document.getElementById('platformDeviation').textContent = platformDeviation.toFixed(2) + 'mm'
-            document.getElementById('depthAccuracy').textContent = '---'
             
             // Color code based on precision
             const platformEl = document.getElementById('platformDeviation')
@@ -1203,6 +1305,17 @@
         
         function endPlacement() {
             isPlacing = false
+            
+            if (currentMode === 'explore') {
+                // In explore mode, just reset position
+                document.getElementById('instructionText').textContent = 'Nice exploration! Try another method'
+                setTimeout(() => {
+                    drillGroup.position.set(0, 3, 0)
+                }, 1000)
+                return
+            }
+            
+            // Challenge mode scoring
             const finalTime = ((Date.now() - startTime) / 1000).toFixed(1)
             
             // Calculate score based ONLY on distance from target
