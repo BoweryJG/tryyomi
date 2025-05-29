@@ -235,6 +235,97 @@
             }
         }
 
+        /* Tutorial overlay */
+        .tutorial-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .tutorial-overlay.hidden {
+            display: none;
+        }
+
+        .tutorial-content {
+            background: linear-gradient(135deg, #0a0f1b 0%, #1a1f2e 100%);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 30px;
+            padding: 50px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .tutorial-title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-desc {
+            font-size: 18px;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .tutorial-steps {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .step.active .step-number {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .step-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .step.active .step-label {
+            color: #00ff88;
+        }
+
         /* Results modal */
         .results-modal {
             position: fixed;
@@ -470,8 +561,34 @@
     
     <!-- Instructions -->
     <div class="instructions">
-        <div class="instruction-text" id="instructionText">Select a method and click to begin placement</div>
-        <div class="controls">Mouse: Move drill | Click: Place implant | Scroll: Adjust depth</div>
+        <div class="instruction-text" id="instructionText">Welcome! Let's explore how surgical precision improves with technology</div>
+        <div class="controls" id="controlsText">We'll start with freehand surgery to see the challenges</div>
+    </div>
+    
+    <!-- Tutorial Overlay -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-content">
+            <h2 class="tutorial-title" id="tutorialTitle">Welcome to Precision Surgery Training</h2>
+            <p class="tutorial-desc" id="tutorialDesc">
+                You'll experience three different surgical methods, from most challenging to easiest.
+                Watch how technology dramatically improves precision and reduces surgeon fatigue.
+            </p>
+            <div class="tutorial-steps">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Freehand</div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Static Guide</div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Yomi Robot</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="startTutorial()">Start Tutorial</button>
+        </div>
     </div>
     
     <!-- Timer -->
@@ -795,6 +912,13 @@
         let startTime = 0
         let targetPosition = targetMarker.position.clone()
         let mouseX = 0, mouseY = 0
+        let tutorialMode = true
+        let tutorialStep = 1
+        let methodScores = {
+            freehand: null,
+            static: null,
+            yomi: null
+        }
         
         const methodData = {
             freehand: {
@@ -820,8 +944,73 @@
             }
         }
         
+        // Tutorial functions
+        window.startTutorial = () => {
+            document.getElementById('tutorialOverlay').classList.add('hidden')
+            tutorialMode = true
+            tutorialStep = 1
+            setMethodForTutorial('freehand')
+            updateTutorialUI()
+        }
+
+        function updateTutorialUI() {
+            const tutorials = {
+                1: {
+                    title: "Step 1: Freehand Surgery",
+                    instruction: "Try placing an implant with freehand technique",
+                    controls: "Notice how difficult it is to maintain precision - your hand naturally shakes",
+                    method: 'freehand'
+                },
+                2: {
+                    title: "Step 2: Static Guided Surgery",
+                    instruction: "Now try with a static surgical guide",
+                    controls: "Better control, but still requires steady hands and experience",
+                    method: 'static'
+                },
+                3: {
+                    title: "Step 3: Yomi Robotic Surgery",
+                    instruction: "Experience the precision of robotic guidance",
+                    controls: "Notice how stable and precise the placement becomes - almost effortless!",
+                    method: 'yomi'
+                }
+            }
+
+            const current = tutorials[tutorialStep]
+            document.getElementById('instructionText').textContent = current.title
+            document.getElementById('controlsText').textContent = current.instruction
+            
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.toggle('active', index + 1 === tutorialStep)
+            })
+        }
+
+        function setMethodForTutorial(method) {
+            currentMethod = method
+            
+            // Update button states
+            document.querySelectorAll('.method-btn').forEach(btn => {
+                btn.classList.remove('active')
+            })
+            
+            // Find and activate the correct button
+            if (method === 'freehand') {
+                document.querySelector('.method-btn:nth-child(1)').classList.add('active')
+            } else if (method === 'static') {
+                document.querySelector('.method-btn:nth-child(2)').classList.add('active')
+            } else if (method === 'yomi') {
+                document.querySelector('.method-btn:nth-child(3)').classList.add('active')
+            }
+            
+            // Update cursor
+            const cursor = document.getElementById('cursor')
+            cursor.className = 'precision-cursor ' + method
+        }
+
         // Method selection
         window.setMethod = (method) => {
+            if (tutorialMode) return // Prevent manual switching during tutorial
+            
             currentMethod = method
             document.querySelectorAll('.method-btn').forEach(btn => {
                 btn.classList.remove('active')
@@ -991,6 +1180,23 @@
         }
         
         function showResults(score, time, angle, platform) {
+            if (tutorialMode) {
+                // Store score for comparison
+                methodScores[currentMethod] = score
+                
+                // Show tutorial-specific results
+                if (tutorialStep < 3) {
+                    // Show intermediate tutorial message
+                    showTutorialProgress(score, currentMethod)
+                    return
+                } else {
+                    // Show final comparison after Yomi
+                    showTutorialComparison()
+                    return
+                }
+            }
+            
+            // Normal results display
             document.getElementById('scoreDisplay').textContent = score + '%'
             document.getElementById('scoreDisplay').style.color = 
                 score > 90 ? '#00ff88' : score > 70 ? '#ffaa00' : '#ff4444'
@@ -1001,6 +1207,41 @@
             document.getElementById('timeResult').textContent = time + 's'
             
             document.getElementById('resultsModal').style.display = 'flex'
+        }
+
+        function showTutorialProgress(score, method) {
+            const messages = {
+                freehand: `Freehand Score: ${score}%\n\nAs you experienced, freehand surgery is extremely challenging. Even skilled surgeons struggle with natural hand tremors.\n\nLet's see how a static guide improves this...`,
+                static: `Static Guide Score: ${score}%\n\nBetter than freehand! The guide helps, but you still need very steady hands.\n\nNow let's experience Yomi's robotic precision...`
+            }
+            
+            alert(messages[method])
+            
+            // Progress to next step
+            tutorialStep++
+            if (tutorialStep === 2) {
+                setMethodForTutorial('static')
+            } else if (tutorialStep === 3) {
+                setMethodForTutorial('yomi')
+            }
+            updateTutorialUI()
+            tryAgain()
+        }
+
+        function showTutorialComparison() {
+            const comparison = `Tutorial Complete! Here's your comparison:
+
+Freehand: ${methodScores.freehand}% - Very difficult, high variance
+Static Guide: ${methodScores.static}% - Improved, but still challenging  
+Yomi Robot: ${methodScores.yomi}% - Exceptional precision with minimal effort
+
+Yomi's robotic guidance makes achieving perfect placement almost effortless!`
+            
+            alert(comparison)
+            tutorialMode = false
+            document.getElementById('instructionText').textContent = "Tutorial complete! Try any method again"
+            document.getElementById('controlsText').textContent = "You can now freely switch between methods"
+            tryAgain()
         }
         
         window.tryAgain = () => {
