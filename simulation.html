@@ -532,17 +532,381 @@
     </script>
 </head>
 <body>
-    <!-- Auth check overlay -->
-    <div id="authCheck" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center;">
-        <div style="text-align: center;">
-            <h2 style="color: #00ff88; font-size: 24px; margin-bottom: 20px;">Checking authentication...</h2>
-            <div class="loading" style="margin: 0 auto; width: 40px; height: 40px; border: 3px solid rgba(0, 255, 136, 0.3); border-radius: 50%; border-top-color: #00ff88; animation: spin 1s ease-in-out infinite;"></div>
+    <!-- Auth check overlay with benefits showcase -->
+    <div id="authCheck" style="position: fixed; inset: 0; background: #000; z-index: 9999; overflow: hidden;">
+        <!-- Background particles -->
+        <div class="particles-bg"></div>
+        
+        <!-- Benefits carousel -->
+        <div class="benefits-showcase">
+            <div class="benefit-card active" id="benefit1">
+                <div class="benefit-icon">
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.3"/>
+                        <circle cx="50" cy="50" r="30" fill="none" stroke="#00ff88" stroke-width="3" opacity="0.5"/>
+                        <circle cx="50" cy="50" r="15" fill="none" stroke="#00ff88" stroke-width="4"/>
+                        <circle cx="50" cy="50" r="5" fill="#00ff88"/>
+                    </svg>
+                </div>
+                <h2 class="benefit-title">Sub-Millimeter Precision</h2>
+                <div class="benefit-stat">&lt;0.2mm</div>
+                <p class="benefit-desc">Average deviation with Yomi vs 2.5mm freehand</p>
+                <div class="benefit-visual">
+                    <div class="comparison-bar">
+                        <div class="bar freehand" style="width: 100%;">
+                            <span>Freehand: 2.5mm</span>
+                        </div>
+                        <div class="bar yomi" style="width: 8%;">
+                            <span>Yomi: 0.2mm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="benefit-card" id="benefit2">
+                <div class="benefit-icon">
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <path d="M50 10 C30 10 10 30 10 50 C10 70 30 90 50 90 C70 90 90 70 90 50 C90 30 70 10 50 10" 
+                              fill="none" stroke="#00ff88" stroke-width="3"/>
+                        <path d="M35 50 L45 60 L65 35" fill="none" stroke="#00ff88" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h2 class="benefit-title">Higher Success Rates</h2>
+                <div class="benefit-stat">99.2%</div>
+                <p class="benefit-desc">Implant success rate over 5 years</p>
+                <div class="benefit-visual">
+                    <div class="success-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="#333" stroke-width="10"/>
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="#00ff88" stroke-width="10"
+                                    stroke-dasharray="314" stroke-dashoffset="3" transform="rotate(-90 60 60)"/>
+                        </svg>
+                        <div class="ring-text">99.2%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="benefit-card" id="benefit3">
+                <div class="benefit-icon">
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <circle cx="30" cy="30" r="20" fill="#00ff88" opacity="0.3"/>
+                        <circle cx="70" cy="30" r="20" fill="#00ff88" opacity="0.3"/>
+                        <path d="M20 60 Q50 80 80 60" fill="none" stroke="#00ff88" stroke-width="3"/>
+                    </svg>
+                </div>
+                <h2 class="benefit-title">Patient Satisfaction</h2>
+                <div class="benefit-stat">50%</div>
+                <p class="benefit-desc">Less post-operative discomfort</p>
+                <div class="benefit-visual">
+                    <div class="patient-benefits">
+                        <div class="patient-item">
+                            <span class="check">✓</span> Faster healing
+                        </div>
+                        <div class="patient-item">
+                            <span class="check">✓</span> Less invasive
+                        </div>
+                        <div class="patient-item">
+                            <span class="check">✓</span> Predictable results
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="benefit-card" id="benefit4">
+                <div class="benefit-icon">
+                    <svg width="80" height="80" viewBox="0 0 100 100">
+                        <rect x="20" y="30" width="60" height="40" fill="none" stroke="#00ff88" stroke-width="3" rx="5"/>
+                        <circle cx="35" cy="50" r="5" fill="#00ff88"/>
+                        <circle cx="50" cy="50" r="5" fill="#00ff88"/>
+                        <circle cx="65" cy="50" r="5" fill="#00ff88"/>
+                        <path d="M30 20 L50 10 L70 20" fill="none" stroke="#00ff88" stroke-width="3"/>
+                    </svg>
+                </div>
+                <h2 class="benefit-title">Revolutionary Technology</h2>
+                <div class="benefit-stat">FDA</div>
+                <p class="benefit-desc">Cleared robotic guidance system</p>
+                <div class="benefit-visual">
+                    <div class="tech-features">
+                        <div class="tech-item">Haptic feedback</div>
+                        <div class="tech-item">Real-time tracking</div>
+                        <div class="tech-item">3D visualization</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress indicator -->
+        <div class="showcase-progress">
+            <div class="progress-dot active" data-benefit="1"></div>
+            <div class="progress-dot" data-benefit="2"></div>
+            <div class="progress-dot" data-benefit="3"></div>
+            <div class="progress-dot" data-benefit="4"></div>
+        </div>
+        
+        <!-- Loading indicator -->
+        <div class="loading-footer">
+            <div class="loading-spinner"></div>
+            <span>Preparing your precision surgery experience...</span>
         </div>
     </div>
     
     <style>
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        
+        .particles-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .particles-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, #00ff88 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: drift 20s linear infinite;
+            opacity: 0.03;
+        }
+        
+        @keyframes drift {
+            from { transform: translate(-50%, -50%); }
+            to { transform: translate(0, 0); }
+        }
+        
+        .benefits-showcase {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .benefit-card {
+            position: absolute;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(10, 15, 27, 0.9) 0%, rgba(26, 31, 46, 0.9) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 30px;
+            padding: 50px;
+            text-align: center;
+            opacity: 0;
+            transform: translateX(100px) scale(0.9);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .benefit-card.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+        
+        .benefit-card.prev {
+            transform: translateX(-100px) scale(0.9);
+            opacity: 0;
+        }
+        
+        .benefit-icon {
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .benefit-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .benefit-stat {
+            font-size: 72px;
+            font-weight: 800;
+            color: #00ff88;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .benefit-desc {
+            font-size: 18px;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        
+        .benefit-visual {
+            margin-top: 30px;
+        }
+        
+        .comparison-bar {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 60px;
+        }
+        
+        .bar {
+            position: absolute;
+            height: 30px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: #fff;
+            font-size: 14px;
+            transition: width 1s ease-out;
+        }
+        
+        .bar.freehand {
+            background: linear-gradient(90deg, #ff4444 0%, #cc0000 100%);
+            top: 0;
+        }
+        
+        .bar.yomi {
+            background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
+            bottom: 0;
+        }
+        
+        .success-ring {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: 700;
+            color: #00ff88;
+        }
+        
+        .patient-benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .patient-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            color: #fff;
+            opacity: 0;
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        .patient-item:nth-child(1) { animation-delay: 0.2s; }
+        .patient-item:nth-child(2) { animation-delay: 0.4s; }
+        .patient-item:nth-child(3) { animation-delay: 0.6s; }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .check {
+            color: #00ff88;
+            font-size: 24px;
+        }
+        
+        .tech-features {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .tech-item {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #00ff88;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.8); }
+        }
+        
+        .showcase-progress {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+        }
+        
+        .loading-footer {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #888;
+            font-size: 14px;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
     </style>
     
@@ -712,6 +1076,53 @@
             }
         }
         
+        // Start benefits carousel
+        let currentBenefit = 1
+        const totalBenefits = 4
+        let benefitInterval
+        
+        function showBenefit(num) {
+            // Update cards
+            document.querySelectorAll('.benefit-card').forEach(card => {
+                card.classList.remove('active', 'prev')
+            })
+            
+            const currentCard = document.getElementById(`benefit${num}`)
+            if (currentCard) {
+                currentCard.classList.add('active')
+            }
+            
+            // Update previous card
+            const prevNum = num === 1 ? totalBenefits : num - 1
+            const prevCard = document.getElementById(`benefit${prevNum}`)
+            if (prevCard) {
+                prevCard.classList.add('prev')
+            }
+            
+            // Update progress dots
+            document.querySelectorAll('.progress-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index + 1 === num)
+            })
+        }
+        
+        function nextBenefit() {
+            currentBenefit = currentBenefit >= totalBenefits ? 1 : currentBenefit + 1
+            showBenefit(currentBenefit)
+        }
+        
+        // Start carousel animation
+        benefitInterval = setInterval(nextBenefit, 3000)
+        
+        // Add click handlers to progress dots
+        document.querySelectorAll('.progress-dot').forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                clearInterval(benefitInterval)
+                currentBenefit = index + 1
+                showBenefit(currentBenefit)
+                benefitInterval = setInterval(nextBenefit, 3000)
+            })
+        })
+        
         // Wait for config to load then check auth
         setTimeout(() => {
             if (typeof CONFIG === 'undefined') {
@@ -724,10 +1135,13 @@
                 checkAuth().then(isAuthenticated => {
                     console.log('Auth check complete:', isAuthenticated)
                     if (isAuthenticated) {
+                        // Stop carousel when auth succeeds
+                        clearInterval(benefitInterval)
                         initializeSimulation()
                     }
                 }).catch(err => {
                     console.error('Auth check promise failed:', err)
+                    clearInterval(benefitInterval)
                     document.getElementById('authCheck').innerHTML = '<div style="text-align: center; color: #ff4444;"><h2>Authentication Error</h2><p>' + err.message + '</p><button onclick="window.location.href=\'index.html\'" style="margin-top: 20px; padding: 10px 20px; background: #00ff88; color: black; border: none; border-radius: 5px; cursor: pointer;">Go to Home</button></div>'
                 })
             }
