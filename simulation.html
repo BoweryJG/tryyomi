@@ -1076,56 +1076,67 @@
             }
         }
         
-        // Start benefits carousel
-        let currentBenefit = 1
-        const totalBenefits = 4
-        let benefitInterval
-        
-        function showBenefit(num) {
-            // Update cards
-            document.querySelectorAll('.benefit-card').forEach(card => {
-                card.classList.remove('active', 'prev')
-            })
+        // Benefits carousel - initialize after DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            let currentBenefit = 1
+            const totalBenefits = 4
+            let benefitInterval = null
             
-            const currentCard = document.getElementById(`benefit${num}`)
-            if (currentCard) {
-                currentCard.classList.add('active')
+            function showBenefit(num) {
+                // Update cards
+                const cards = document.querySelectorAll('.benefit-card')
+                if (!cards.length) return // Exit if cards not found
+                
+                cards.forEach(card => {
+                    card.classList.remove('active', 'prev')
+                })
+                
+                const currentCard = document.getElementById(`benefit${num}`)
+                if (currentCard) {
+                    currentCard.classList.add('active')
+                }
+                
+                // Update previous card
+                const prevNum = num === 1 ? totalBenefits : num - 1
+                const prevCard = document.getElementById(`benefit${prevNum}`)
+                if (prevCard) {
+                    prevCard.classList.add('prev')
+                }
+                
+                // Update progress dots
+                document.querySelectorAll('.progress-dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index + 1 === num)
+                })
             }
             
-            // Update previous card
-            const prevNum = num === 1 ? totalBenefits : num - 1
-            const prevCard = document.getElementById(`benefit${prevNum}`)
-            if (prevCard) {
-                prevCard.classList.add('prev')
-            }
-            
-            // Update progress dots
-            document.querySelectorAll('.progress-dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index + 1 === num)
-            })
-        }
-        
-        function nextBenefit() {
-            currentBenefit = currentBenefit >= totalBenefits ? 1 : currentBenefit + 1
-            showBenefit(currentBenefit)
-        }
-        
-        // Start carousel animation with delay
-        setTimeout(() => {
-            benefitInterval = setInterval(nextBenefit, 6000) // 6 seconds per card
-        }, 2000) // 2 second delay before starting
-        
-        // Add click handlers to progress dots
-        document.querySelectorAll('.progress-dot').forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                clearInterval(benefitInterval)
-                currentBenefit = index + 1
+            function nextBenefit() {
+                currentBenefit = currentBenefit >= totalBenefits ? 1 : currentBenefit + 1
                 showBenefit(currentBenefit)
-                // Restart with longer interval after manual click
-                setTimeout(() => {
-                    benefitInterval = setInterval(nextBenefit, 6000)
-                }, 1000)
+            }
+            
+            // Initialize first card
+            showBenefit(1)
+            
+            // Start carousel animation after a delay
+            setTimeout(() => {
+                benefitInterval = setInterval(nextBenefit, 6000) // 6 seconds per card
+            }, 3000) // 3 second delay to read first card
+            
+            // Add click handlers to progress dots
+            document.querySelectorAll('.progress-dot').forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    if (benefitInterval) clearInterval(benefitInterval)
+                    currentBenefit = index + 1
+                    showBenefit(currentBenefit)
+                    // Restart with longer interval after manual click
+                    setTimeout(() => {
+                        benefitInterval = setInterval(nextBenefit, 6000)
+                    }, 2000)
+                })
             })
+            
+            // Store interval reference globally for cleanup
+            window.benefitInterval = benefitInterval
         })
         
         // Wait for config to load then check auth
@@ -1141,12 +1152,12 @@
                     console.log('Auth check complete:', isAuthenticated)
                     if (isAuthenticated) {
                         // Stop carousel when auth succeeds
-                        clearInterval(benefitInterval)
+                        if (window.benefitInterval) clearInterval(window.benefitInterval)
                         initializeSimulation()
                     }
                 }).catch(err => {
                     console.error('Auth check promise failed:', err)
-                    clearInterval(benefitInterval)
+                    if (window.benefitInterval) clearInterval(window.benefitInterval)
                     document.getElementById('authCheck').innerHTML = '<div style="text-align: center; color: #ff4444;"><h2>Authentication Error</h2><p>' + err.message + '</p><button onclick="window.location.href=\'index.html\'" style="margin-top: 20px; padding: 10px 20px; background: #00ff88; color: black; border: none; border-radius: 5px; cursor: pointer;">Go to Home</button></div>'
                 })
             }
