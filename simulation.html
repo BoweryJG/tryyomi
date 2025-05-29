@@ -955,7 +955,7 @@
         
         // Glowing center point
         const centerGeometry = new THREE.SphereGeometry(0.1, 16, 16)
-        const centerMaterial = new THREE.MeshBasicMaterial({
+        const centerMaterial = new THREE.MeshStandardMaterial({
             color: 0x00ff88,
             emissive: 0x00ff88,
             emissiveIntensity: 2
@@ -1081,12 +1081,23 @@
         }
         
         // Mode functions
-        window.setMode = (mode) => {
+        window.setMode = (mode, fromButton = true) => {
             currentMode = mode
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active')
             })
-            event.target.classList.add('active')
+            
+            // Add active class to the correct button
+            if (fromButton && event && event.target) {
+                event.target.classList.add('active')
+            } else {
+                // Find and activate the correct button
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    if (btn.textContent.toLowerCase().includes(mode)) {
+                        btn.classList.add('active')
+                    }
+                })
+            }
             
             if (mode === 'explore') {
                 // Hide metrics in explore mode
@@ -1111,7 +1122,7 @@
             setMethodForTutorial('freehand')
             updateTutorialUI()
             // Start in challenge mode for tutorial
-            setMode('challenge')
+            setMode('challenge', false)
         }
 
         function updateTutorialUI() {
@@ -1150,18 +1161,17 @@
             currentMethod = method
             
             // Update button states
-            document.querySelectorAll('.method-btn').forEach(btn => {
+            document.querySelectorAll('.method-btn').forEach((btn, index) => {
                 btn.classList.remove('active')
+                
+                // Match button by text content
+                const btnText = btn.textContent.toLowerCase()
+                if ((method === 'freehand' && btnText.includes('freehand')) ||
+                    (method === 'static' && btnText.includes('static')) ||
+                    (method === 'yomi' && btnText.includes('yomi'))) {
+                    btn.classList.add('active')
+                }
             })
-            
-            // Find and activate the correct button
-            if (method === 'freehand') {
-                document.querySelector('.method-btn:nth-child(1)').classList.add('active')
-            } else if (method === 'static') {
-                document.querySelector('.method-btn:nth-child(2)').classList.add('active')
-            } else if (method === 'yomi') {
-                document.querySelector('.method-btn:nth-child(3)').classList.add('active')
-            }
             
             // Update cursor
             const cursor = document.getElementById('cursor')
