@@ -401,9 +401,15 @@
     <div id="authCheck" style="position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center;">
         <div style="text-align: center;">
             <h2 style="color: #00ff88; font-size: 24px; margin-bottom: 20px;">Checking authentication...</h2>
-            <div class="loading" style="margin: 0 auto;"></div>
+            <div class="loading" style="margin: 0 auto; width: 40px; height: 40px; border: 3px solid rgba(0, 255, 136, 0.3); border-radius: 50%; border-top-color: #00ff88; animation: spin 1s ease-in-out infinite;"></div>
         </div>
     </div>
+    
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
     
     <canvas id="canvas"></canvas>
     
@@ -497,32 +503,50 @@
         
         // Check authentication
         async function checkAuth() {
+            console.log('Checking authentication...')
             try {
-                const { data: { user } } = await supabase.auth.getUser()
+                const { data: { user }, error } = await supabase.auth.getUser()
+                
+                if (error) {
+                    console.error('Auth error:', error)
+                    throw error
+                }
                 
                 if (!user) {
                     // Not authenticated, redirect to home
+                    console.log('No user found, redirecting...')
                     alert('Please sign in to use the simulator')
                     window.location.href = 'index.html'
                     return false
                 }
                 
+                console.log('User authenticated:', user.email)
                 // Hide auth check overlay
                 document.getElementById('authCheck').style.display = 'none'
                 return true
             } catch (error) {
                 console.error('Auth check failed:', error)
+                alert('Authentication check failed. Redirecting to home page.')
                 window.location.href = 'index.html'
                 return false
             }
         }
         
-        // Only initialize the game if authenticated
-        checkAuth().then(isAuthenticated => {
-            if (isAuthenticated) {
-                initializeSimulation()
-            }
-        })
+        // Wait for config to load then check auth
+        if (typeof CONFIG === 'undefined') {
+            console.error('CONFIG not loaded! Check config.js')
+            alert('Configuration failed to load. Please refresh the page.')
+            document.getElementById('authCheck').innerHTML = '<div style="text-align: center; color: #ff4444;"><h2>Configuration Error</h2><p>Please refresh the page</p></div>'
+        } else {
+            // Only initialize the game if authenticated
+            checkAuth().then(isAuthenticated => {
+                if (isAuthenticated) {
+                    initializeSimulation()
+                }
+            }).catch(err => {
+                console.error('Auth check promise failed:', err)
+            })
+        }
         
         function initializeSimulation() {
         
