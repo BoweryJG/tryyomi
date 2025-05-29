@@ -157,6 +157,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 50;
+            display: none; /* Hide screen target, we'll use 3D target */
         }
 
         .target-ring {
@@ -865,22 +866,85 @@
         jawGroup.add(teethGroup)
         scene.add(jawGroup)
         
-        // Target site marker
-        const targetGeometry = new THREE.RingGeometry(0.35, 0.4, 32)
+        // Target site marker - MUCH MORE VISIBLE
+        const targetGroup = new THREE.Group()
+        
+        // Main target ring
+        const targetGeometry = new THREE.RingGeometry(0.35, 0.45, 32)
         const targetMaterial = new THREE.MeshBasicMaterial({
             color: 0x00ff88,
             transparent: true,
-            opacity: 0.5,
+            opacity: 0.8,
             side: THREE.DoubleSide
         })
         const targetMarker = new THREE.Mesh(targetGeometry, targetMaterial)
         targetMarker.rotation.x = -Math.PI / 2
-        targetMarker.position.set(
+        targetGroup.add(targetMarker)
+        
+        // Glowing center point
+        const centerGeometry = new THREE.SphereGeometry(0.1, 16, 16)
+        const centerMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ff88,
+            emissive: 0x00ff88,
+            emissiveIntensity: 2
+        })
+        const centerMarker = new THREE.Mesh(centerGeometry, centerMaterial)
+        centerMarker.position.y = 0.05
+        targetGroup.add(centerMarker)
+        
+        // Outer pulse ring
+        const pulseGeometry = new THREE.RingGeometry(0.5, 0.6, 32)
+        const pulseMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ff88,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide
+        })
+        const pulseRing = new THREE.Mesh(pulseGeometry, pulseMaterial)
+        pulseRing.rotation.x = -Math.PI / 2
+        targetGroup.add(pulseRing)
+        
+        // Arrow pointing down
+        const arrowGeometry = new THREE.ConeGeometry(0.2, 0.5, 8)
+        const arrowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ff88,
+            transparent: true,
+            opacity: 0.7
+        })
+        const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial)
+        arrow.position.y = 1.5
+        arrow.rotation.x = Math.PI
+        targetGroup.add(arrow)
+        
+        // "TARGET HERE" text sprite
+        const canvas = document.createElement('canvas')
+        canvas.width = 256
+        canvas.height = 64
+        const ctx = canvas.getContext('2d')
+        ctx.fillStyle = '#00ff88'
+        ctx.font = 'bold 32px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText('TARGET HERE', 128, 40)
+        
+        const texture = new THREE.CanvasTexture(canvas)
+        const spriteMaterial = new THREE.SpriteMaterial({ 
+            map: texture,
+            transparent: true,
+            opacity: 0.9
+        })
+        const sprite = new THREE.Sprite(spriteMaterial)
+        sprite.position.y = 2
+        sprite.scale.set(2, 0.5, 1)
+        targetGroup.add(sprite)
+        
+        targetGroup.position.set(
             Math.cos(teethPositions[7].angle) * teethPositions[7].radius,
             0.61,
             Math.sin(teethPositions[7].angle) * teethPositions[7].radius
         )
-        scene.add(targetMarker)
+        scene.add(targetGroup)
+        
+        const targetPosition = targetGroup.position.clone()
         
         // Drill/Implant model
         const drillGroup = new THREE.Group()
@@ -910,7 +974,6 @@
         let currentMethod = 'freehand'
         let isPlacing = false
         let startTime = 0
-        let targetPosition = targetMarker.position.clone()
         let mouseX = 0, mouseY = 0
         let tutorialMode = true
         let tutorialStep = 1
@@ -957,20 +1020,20 @@
             const tutorials = {
                 1: {
                     title: "Step 1: Freehand Surgery",
-                    instruction: "Try placing an implant with freehand technique",
-                    controls: "Notice how difficult it is to maintain precision - your hand naturally shakes",
+                    instruction: "Click to start, then move your mouse to the GREEN TARGET and click to place",
+                    controls: "Watch how difficult it is to hit the target - your hand naturally shakes!",
                     method: 'freehand'
                 },
                 2: {
                     title: "Step 2: Static Guided Surgery",
-                    instruction: "Now try with a static surgical guide",
-                    controls: "Better control, but still requires steady hands and experience",
+                    instruction: "Click to start, then guide the drill to the GREEN TARGET",
+                    controls: "Better than freehand, but still challenging to hit the exact center",
                     method: 'static'
                 },
                 3: {
                     title: "Step 3: Yomi Robotic Surgery",
-                    instruction: "Experience the precision of robotic guidance",
-                    controls: "Notice how stable and precise the placement becomes - almost effortless!",
+                    instruction: "Click to start, then easily guide to the GREEN TARGET",
+                    controls: "Notice how the robot stabilizes your movements - precision is effortless!",
                     method: 'yomi'
                 }
             }
@@ -1290,8 +1353,22 @@ Yomi's robotic guidance makes achieving perfect placement almost effortless!`
             
             controls.update()
             
-            // Animate target marker
-            targetMarker.material.opacity = 0.3 + Math.sin(Date.now() * 0.003) * 0.2
+            // Animate target elements
+            if (targetGroup) {
+                // Pulse the rings
+                targetMarker.material.opacity = 0.6 + Math.sin(Date.now() * 0.003) * 0.2
+                pulseRing.material.opacity = 0.2 + Math.sin(Date.now() * 0.002) * 0.1
+                pulseRing.scale.setScalar(1 + Math.sin(Date.now() * 0.002) * 0.1)
+                
+                // Bob the arrow
+                arrow.position.y = 1.5 + Math.sin(Date.now() * 0.004) * 0.2
+                
+                // Rotate the center marker
+                centerMarker.rotation.y += 0.02
+                
+                // Float the text
+                sprite.position.y = 2 + Math.sin(Date.now() * 0.003) * 0.1
+            }
             
             // Rotate drill when placing
             if (isPlacing) {
