@@ -1110,8 +1110,10 @@
             showBenefit(currentBenefit)
         }
         
-        // Start carousel animation
-        benefitInterval = setInterval(nextBenefit, 3000)
+        // Start carousel animation with delay
+        setTimeout(() => {
+            benefitInterval = setInterval(nextBenefit, 6000) // 6 seconds per card
+        }, 2000) // 2 second delay before starting
         
         // Add click handlers to progress dots
         document.querySelectorAll('.progress-dot').forEach((dot, index) => {
@@ -1119,7 +1121,10 @@
                 clearInterval(benefitInterval)
                 currentBenefit = index + 1
                 showBenefit(currentBenefit)
-                benefitInterval = setInterval(nextBenefit, 3000)
+                // Restart with longer interval after manual click
+                setTimeout(() => {
+                    benefitInterval = setInterval(nextBenefit, 6000)
+                }, 1000)
             })
         })
         
