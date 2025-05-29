@@ -454,6 +454,19 @@
             }
         }
     </style>
+    <!-- Configuration -->
+    <script src="config.js"></script>
+    <!-- Google Analytics -->
+    <script async id="ga-script"></script>
+    <script>
+        // Load GA script with configured ID
+        document.getElementById('ga-script').src = `https://www.googletagmanager.com/gtag/js?id=${CONFIG.GA_MEASUREMENT_ID}`;
+        
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', CONFIG.GA_MEASUREMENT_ID);
+    </script>
 </head>
 <body>
     <!-- Navigation -->
@@ -561,10 +574,8 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
         
-        // Supabase configuration
-        const supabaseUrl = 'https://cbopynuvhcymbumjnvay.supabase.co'
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNib3B5bnV2aGN5bWJ1bWpudmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTUxNzMsImV4cCI6MjA1OTU3MTE3M30.UZElMkoHugIt984RtYWyfrRuv2rB67opQdCrFVPCfzU'
-        const supabase = createClient(supabaseUrl, supabaseAnonKey)
+        // Supabase configuration from config.js
+        const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY)
         
         // Auth state
         let currentUser = null
@@ -580,6 +591,11 @@
         
         // Auth functions
         window.signInWithGoogle = async () => {
+            // Track sign in attempt
+            gtag('event', 'sign_in_attempt', {
+                'method': 'google'
+            });
+            
             try {
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
@@ -592,6 +608,10 @@
             } catch (error) {
                 console.error('Error signing in with Google:', error)
                 alert('Sign in failed. Please try again.')
+                gtag('event', 'sign_in_error', {
+                    'method': 'google',
+                    'error': error.message
+                });
             }
         }
         
@@ -662,11 +682,21 @@
         
         // Start simulation
         window.startSimulation = () => {
+            // Track simulation start attempt
+            gtag('event', 'start_simulation_clicked');
+            
             // Always require authentication
             if (!currentUser) {
+                gtag('event', 'auth_required_shown');
                 openAuthModal()
                 return
             }
+            
+            // Track successful simulation start
+            gtag('event', 'simulation_started', {
+                'user_id': currentUser.id
+            });
+            
             // Redirect to simulation page
             window.location.href = 'simulation.html'
         }
