@@ -534,16 +534,12 @@
         <div class="hud-panel">
             <div class="metrics">
                 <div class="metric">
-                    <span class="metric-label">Angular Deviation</span>
-                    <span class="metric-value" id="angleDeviation">0.00°</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Platform Deviation</span>
+                    <span class="metric-label">Distance from Target</span>
                     <span class="metric-value" id="platformDeviation">0.00mm</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Depth Accuracy</span>
-                    <span class="metric-value" id="depthAccuracy">100%</span>
+                    <span class="metric-label">Precision Goal</span>
+                    <span class="metric-value good">&lt;1mm</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Time Elapsed</span>
@@ -1160,27 +1156,24 @@
         
         function updateMetrics() {
             const distance = drillGroup.position.distanceTo(targetPosition)
-            const angleDeviation = Math.abs(Math.atan2(
-                drillGroup.position.x - targetPosition.x,
-                drillGroup.position.z - targetPosition.z
-            ) * 180 / Math.PI)
-            
             const platformDeviation = distance * 10 // Convert to mm
-            const depthAccuracy = Math.max(0, 100 - Math.abs(drillGroup.position.y - 2) * 50)
             
-            // Update UI
-            document.getElementById('angleDeviation').textContent = angleDeviation.toFixed(2) + '°'
+            // Update UI - MAIN METRIC IS DISTANCE FROM TARGET
+            document.getElementById('angleDeviation').textContent = '---'
             document.getElementById('platformDeviation').textContent = platformDeviation.toFixed(2) + 'mm'
-            document.getElementById('depthAccuracy').textContent = depthAccuracy.toFixed(0) + '%'
+            document.getElementById('depthAccuracy').textContent = '---'
             
-            // Color code values
-            const angleEl = document.getElementById('angleDeviation')
+            // Color code based on precision
             const platformEl = document.getElementById('platformDeviation')
-            const depthEl = document.getElementById('depthAccuracy')
             
-            angleEl.className = 'metric-value ' + (angleDeviation < 2 ? 'good' : angleDeviation < 5 ? 'warning' : 'bad')
-            platformEl.className = 'metric-value ' + (platformDeviation < 0.5 ? 'good' : platformDeviation < 1 ? 'warning' : 'bad')
-            depthEl.className = 'metric-value ' + (depthAccuracy > 90 ? 'good' : depthAccuracy > 70 ? 'warning' : 'bad')
+            // Doctors are proud of sub-millimeter precision
+            if (platformDeviation < 1) {
+                platformEl.className = 'metric-value good'
+            } else if (platformDeviation < 3) {
+                platformEl.className = 'metric-value warning'
+            } else {
+                platformEl.className = 'metric-value bad'
+            }
         }
         
         // Start placement
@@ -1212,21 +1205,32 @@
             isPlacing = false
             const finalTime = ((Date.now() - startTime) / 1000).toFixed(1)
             
-            // Calculate score
-            const angleDeviation = parseFloat(document.getElementById('angleDeviation').textContent)
-            const platformDeviation = parseFloat(document.getElementById('platformDeviation').textContent)
-            const depthAccuracy = parseFloat(document.getElementById('depthAccuracy').textContent)
+            // Calculate score based ONLY on distance from target
+            const distance = drillGroup.position.distanceTo(targetPosition)
+            const platformDeviation = distance * 10 // Convert to mm
             
-            const score = Math.round((100 - angleDeviation * 5) * 0.4 + 
-                                   (100 - platformDeviation * 20) * 0.4 + 
-                                   depthAccuracy * 0.2)
+            // Scoring: Doctors are proud of precision
+            let score
+            if (platformDeviation < 0.5) {
+                score = 100 // Perfect - sub 0.5mm
+            } else if (platformDeviation < 1) {
+                score = 95 // Excellent - sub 1mm
+            } else if (platformDeviation < 2) {
+                score = 85 // Good - sub 2mm
+            } else if (platformDeviation < 3) {
+                score = 70 // Acceptable - sub 3mm
+            } else if (platformDeviation < 5) {
+                score = 50 // Poor - 3-5mm off
+            } else {
+                score = Math.max(10, 50 - (platformDeviation - 5) * 5) // Very poor
+            }
             
             // Show score popup
             showScorePopup(score)
             
             // Show results after delay
             setTimeout(() => {
-                showResults(score, finalTime, angleDeviation, platformDeviation)
+                showResults(score, finalTime, platformDeviation)
             }, 1500)
         }
         
@@ -1242,15 +1246,18 @@
             setTimeout(() => popup.remove(), 2000)
         }
         
-        function showResults(score, time, angle, platform) {
+        function showResults(score, time, platformDeviation) {
             if (tutorialMode) {
-                // Store score for comparison
-                methodScores[currentMethod] = score
+                // Store score AND precision for comparison
+                methodScores[currentMethod] = {
+                    score: score,
+                    precision: platformDeviation
+                }
                 
                 // Show tutorial-specific results
                 if (tutorialStep < 3) {
                     // Show intermediate tutorial message
-                    showTutorialProgress(score, currentMethod)
+                    showTutorialProgress(score, platformDeviation, currentMethod)
                     return
                 } else {
                     // Show final comparison after Yomi
@@ -1266,16 +1273,16 @@
             
             document.getElementById('methodResult').textContent = 
                 currentMethod.charAt(0).toUpperCase() + currentMethod.slice(1)
-            document.getElementById('precisionResult').textContent = platform.toFixed(2) + 'mm'
+            document.getElementById('precisionResult').textContent = platformDeviation.toFixed(2) + 'mm'
             document.getElementById('timeResult').textContent = time + 's'
             
             document.getElementById('resultsModal').style.display = 'flex'
         }
 
-        function showTutorialProgress(score, method) {
+        function showTutorialProgress(score, precision, method) {
             const messages = {
-                freehand: `Freehand Score: ${score}%\n\nAs you experienced, freehand surgery is extremely challenging. Even skilled surgeons struggle with natural hand tremors.\n\nLet's see how a static guide improves this...`,
-                static: `Static Guide Score: ${score}%\n\nBetter than freehand! The guide helps, but you still need very steady hands.\n\nNow let's experience Yomi's robotic precision...`
+                freehand: `Freehand Result: ${precision.toFixed(1)}mm off target\n\nAs you experienced, freehand surgery is extremely challenging. Even skilled surgeons struggle to achieve sub-millimeter precision with natural hand tremors.\n\nLet's see how a static guide improves this...`,
+                static: `Static Guide Result: ${precision.toFixed(1)}mm off target\n\nBetter than freehand! The guide helps, but achieving consistent sub-millimeter precision still requires exceptional skill.\n\nNow let's experience Yomi's robotic precision...`
             }
             
             alert(messages[method])
@@ -1292,13 +1299,17 @@
         }
 
         function showTutorialComparison() {
-            const comparison = `Tutorial Complete! Here's your comparison:
+            const comparison = `Tutorial Complete! Your precision results:
 
-Freehand: ${methodScores.freehand}% - Very difficult, high variance
-Static Guide: ${methodScores.static}% - Improved, but still challenging  
-Yomi Robot: ${methodScores.yomi}% - Exceptional precision with minimal effort
+Freehand: ${methodScores.freehand.precision.toFixed(1)}mm off target
+Static Guide: ${methodScores.static.precision.toFixed(1)}mm off target
+Yomi Robot: ${methodScores.yomi.precision.toFixed(1)}mm off target
 
-Yomi's robotic guidance makes achieving perfect placement almost effortless!`
+${methodScores.yomi.precision < 1 ? 
+    "Exceptional! Yomi achieved sub-millimeter precision!" : 
+    "Yomi's robotic guidance dramatically improves precision!"}
+
+Doctors using Yomi consistently achieve <1mm precision - the gold standard in implant surgery.`
             
             alert(comparison)
             tutorialMode = false
