@@ -828,57 +828,128 @@
         function createTooth(type = 'molar') {
             let geometry
             
-            // Create more realistic tooth shapes
+            // Create smooth, realistic tooth shapes using SphereGeometry as base
             if (type === 'molar') {
-                // Molars - wider with multiple cusps
-                geometry = new THREE.CylinderGeometry(0.35, 0.4, 0.8, 8)
+                // Start with a sphere and deform it
+                geometry = new THREE.SphereGeometry(0.4, 32, 32)
                 
-                // Add cusps by modifying vertices
+                // Flatten and shape into molar
                 const positions = geometry.attributes.position
                 for (let i = 0; i < positions.count; i++) {
-                    const y = positions.getY(i)
-                    if (y > 0.2) {
-                        const x = positions.getX(i)
-                        const z = positions.getZ(i)
+                    let x = positions.getX(i)
+                    let y = positions.getY(i)
+                    let z = positions.getZ(i)
+                    
+                    // Flatten the sphere vertically
+                    y *= 0.5
+                    
+                    // Create crown with smooth cusps
+                    if (y > 0) {
                         const angle = Math.atan2(z, x)
-                        const cuspPattern = Math.sin(angle * 4) * 0.1
-                        positions.setY(i, y + cuspPattern)
+                        const cuspPattern = 0.8 + 0.2 * Math.sin(angle * 4)
+                        y *= cuspPattern
+                        
+                        // Smooth the top surface
+                        const topFactor = 1 - (y / 0.4)
+                        x *= (0.9 + topFactor * 0.1)
+                        z *= (0.9 + topFactor * 0.1)
                     }
+                    
+                    // Taper towards the root
+                    if (y < -0.1) {
+                        const rootFactor = (y + 0.1) / -0.3
+                        x *= (1 - rootFactor * 0.3)
+                        z *= (1 - rootFactor * 0.3)
+                    }
+                    
+                    positions.setXYZ(i, x, y + 0.4, z)
                 }
             } else if (type === 'premolar') {
-                // Premolars - smaller with two cusps
-                geometry = new THREE.CylinderGeometry(0.25, 0.3, 0.9, 6)
+                // Smaller sphere base
+                geometry = new THREE.SphereGeometry(0.3, 24, 24)
                 
-                // Add two cusps
                 const positions = geometry.attributes.position
                 for (let i = 0; i < positions.count; i++) {
-                    const y = positions.getY(i)
-                    if (y > 0.3) {
-                        const x = positions.getX(i)
-                        const cuspPattern = Math.abs(x) * 0.2
-                        positions.setY(i, y + cuspPattern)
+                    let x = positions.getX(i)
+                    let y = positions.getY(i)
+                    let z = positions.getZ(i)
+                    
+                    // Elongate vertically
+                    y *= 0.7
+                    
+                    // Two smooth cusps
+                    if (y > 0) {
+                        const cuspPattern = 0.9 + 0.1 * Math.abs(x)
+                        y *= cuspPattern
                     }
+                    
+                    // Taper root
+                    if (y < 0) {
+                        const rootFactor = -y / 0.3
+                        x *= (1 - rootFactor * 0.2)
+                        z *= (1 - rootFactor * 0.2)
+                    }
+                    
+                    positions.setXYZ(i, x, y + 0.45, z)
                 }
             } else if (type === 'canine') {
-                // Canines - pointed
-                geometry = new THREE.ConeGeometry(0.25, 1.2, 6)
-                geometry.translate(0, 0.6, 0)
-            } else {
-                // Incisors - chisel-shaped
-                geometry = new THREE.BoxGeometry(0.2, 1.1, 0.1, 4, 8, 2)
+                // Teardrop shape
+                geometry = new THREE.SphereGeometry(0.25, 24, 24)
                 
-                // Round the edges
                 const positions = geometry.attributes.position
                 for (let i = 0; i < positions.count; i++) {
-                    const x = positions.getX(i)
-                    const y = positions.getY(i)
-                    const z = positions.getZ(i)
+                    let x = positions.getX(i)
+                    let y = positions.getY(i)
+                    let z = positions.getZ(i)
                     
-                    // Round the cutting edge
-                    if (y > 0.4) {
-                        const edgeRound = 1 - (y - 0.4) / 0.7
-                        positions.setZ(i, z * edgeRound)
+                    // Create pointed crown
+                    if (y > 0) {
+                        const pointFactor = y / 0.25
+                        x *= (1 - pointFactor * 0.7)
+                        z *= (1 - pointFactor * 0.7)
+                        y *= 2 // Elongate upward
                     }
+                    
+                    // Smooth taper to root
+                    if (y < 0) {
+                        y *= 1.5
+                        const rootFactor = -y / 0.375
+                        x *= (1 - rootFactor * 0.3)
+                        z *= (1 - rootFactor * 0.3)
+                    }
+                    
+                    positions.setXYZ(i, x, y + 0.5, z)
+                }
+            } else {
+                // Incisors - flattened sphere
+                geometry = new THREE.SphereGeometry(0.2, 24, 24)
+                
+                const positions = geometry.attributes.position
+                for (let i = 0; i < positions.count; i++) {
+                    let x = positions.getX(i)
+                    let y = positions.getY(i)
+                    let z = positions.getZ(i)
+                    
+                    // Flatten front-to-back
+                    z *= 0.3
+                    
+                    // Elongate vertically
+                    y *= 1.5
+                    
+                    // Chisel edge
+                    if (y > 0.2) {
+                        const edgeFactor = (y - 0.2) / 0.1
+                        z *= (1 - edgeFactor * 0.5)
+                    }
+                    
+                    // Root taper
+                    if (y < 0) {
+                        const rootFactor = -y / 0.3
+                        x *= (1 - rootFactor * 0.2)
+                        z *= (1 - rootFactor * 0.2)
+                    }
+                    
+                    positions.setXYZ(i, x, y + 0.5, z)
                 }
             }
             
@@ -1390,6 +1461,10 @@
             startTime = Date.now()
             document.getElementById('instructionText').textContent = 'Position the drill and click to place'
             
+            // Start session tracking
+            const mode = tutorialMode ? 'tutorial' : currentMode
+            startSession(currentMethod, mode)
+            
             // Start timer
             const interval = setInterval(() => {
                 if (isPlacing) {
@@ -1546,36 +1621,79 @@ Doctors using Yomi consistently achieve <1mm precision - the gold standard in im
             document.getElementById('instructionText').textContent = 'Select a method and click to begin placement'
         }
         
+        // Track session start
+        let currentSessionId = null
+        
+        async function startSession(method, mode) {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    const { data, error } = await supabase
+                        .from('sessions')
+                        .insert({
+                            user_id: user.id,
+                            method: method,
+                            mode: mode,
+                            browser_info: {
+                                userAgent: navigator.userAgent,
+                                platform: navigator.platform,
+                                language: navigator.language
+                            }
+                        })
+                        .select()
+                        .single()
+                    
+                    if (!error && data) {
+                        currentSessionId = data.id
+                        console.log('Session started:', currentSessionId)
+                    }
+                }
+            } catch (error) {
+                console.error('Error starting session:', error)
+            }
+        }
+        
+        async function completeSession(score, precisionMM, timeSeconds) {
+            if (!currentSessionId) return
+            
+            try {
+                const { error } = await supabase
+                    .from('sessions')
+                    .update({
+                        completed_at: new Date().toISOString(),
+                        score: score,
+                        precision_mm: precisionMM,
+                        time_seconds: timeSeconds
+                    })
+                    .eq('id', currentSessionId)
+                
+                if (!error) {
+                    console.log('Session completed:', currentSessionId)
+                }
+            } catch (error) {
+                console.error('Error completing session:', error)
+            }
+        }
+        
         window.saveResults = async () => {
             try {
                 const { data: { user } } = await supabase.auth.getUser()
                 if (user) {
                     const score = parseInt(document.getElementById('scoreDisplay').textContent)
-                    const method = document.getElementById('methodResult').textContent
-                    const precision = document.getElementById('precisionResult').textContent
-                    const time = document.getElementById('timeResult').textContent
+                    const method = document.getElementById('methodResult').textContent.toLowerCase()
+                    const precisionText = document.getElementById('precisionResult').textContent
+                    const precision = parseFloat(precisionText.replace('mm', ''))
+                    const timeText = document.getElementById('timeResult').textContent
+                    const time = parseFloat(timeText.replace('s', ''))
                     
-                    // Save to Supabase (you'll need to create a 'scores' table)
-                    const { error } = await supabase
-                        .from('scores')
-                        .insert({
-                            user_id: user.id,
-                            score: score,
-                            method: method,
-                            precision: precision,
-                            time: time,
-                            created_at: new Date().toISOString()
-                        })
+                    // Complete the session
+                    await completeSession(score, precision, time)
                     
-                    if (error) {
-                        console.error('Error saving results:', error)
-                        alert('Results saved locally')
-                    } else {
-                        alert('Results saved successfully!')
-                    }
+                    alert('Results saved successfully!')
                 }
             } catch (error) {
                 console.error('Save error:', error)
+                alert('Error saving results')
             }
             tryAgain()
         }
@@ -1587,11 +1705,60 @@ Doctors using Yomi consistently achieve <1mm precision - the gold standard in im
             controls.update()
             
             // Animate target elements
-            if (targetGroup) {
-                // Pulse the rings
-                targetMarker.material.opacity = 0.6 + Math.sin(Date.now() * 0.003) * 0.2
-                pulseRing.material.opacity = 0.2 + Math.sin(Date.now() * 0.002) * 0.1
-                pulseRing.scale.setScalar(1 + Math.sin(Date.now() * 0.002) * 0.1)
+            if (targetGroup && isPlacing) {
+                // Calculate current distance from drill tip
+                const drillTipWorld = new THREE.Vector3(
+                    drillGroup.position.x,
+                    drillGroup.position.y - 2,
+                    drillGroup.position.z
+                )
+                const distance2D = Math.sqrt(
+                    Math.pow(drillTipWorld.x - targetPosition.x, 2) +
+                    Math.pow(drillTipWorld.z - targetPosition.z, 2)
+                )
+                const distanceMM = distance2D * 10
+                
+                // When within 1mm, make everything glow bright green
+                if (distanceMM < 1) {
+                    targetMarker.material.color.setHex(0x00ff00)
+                    targetMarker.material.opacity = 0.9
+                    centerMarker.material.color.setHex(0x00ff00)
+                    centerMarker.material.emissive.setHex(0x00ff00)
+                    centerMarker.material.emissiveIntensity = 5
+                    pulseRing.material.color.setHex(0x00ff00)
+                    pulseRing.material.opacity = 0.6
+                    pulseRing.scale.setScalar(1.5 + Math.sin(Date.now() * 0.01) * 0.2)
+                    
+                    // Make arrow glow too
+                    arrow.material.color.setHex(0x00ff00)
+                    arrow.material.opacity = 1
+                    
+                    // Update text to show success
+                    if (sprite.material.map) {
+                        const canvas = document.createElement('canvas')
+                        canvas.width = 256
+                        canvas.height = 64
+                        const ctx = canvas.getContext('2d')
+                        ctx.fillStyle = '#00ff00'
+                        ctx.font = 'bold 32px Arial'
+                        ctx.textAlign = 'center'
+                        ctx.fillText('PERFECT!', 128, 40)
+                        sprite.material.map = new THREE.CanvasTexture(canvas)
+                        sprite.material.map.needsUpdate = true
+                    }
+                } else {
+                    // Normal animation
+                    targetMarker.material.color.setHex(0x00ff88)
+                    targetMarker.material.opacity = 0.6 + Math.sin(Date.now() * 0.003) * 0.2
+                    centerMarker.material.color.setHex(0x00ff88)
+                    centerMarker.material.emissive.setHex(0x00ff88)
+                    centerMarker.material.emissiveIntensity = 2
+                    pulseRing.material.color.setHex(0x00ff88)
+                    pulseRing.material.opacity = 0.2 + Math.sin(Date.now() * 0.002) * 0.1
+                    pulseRing.scale.setScalar(1 + Math.sin(Date.now() * 0.002) * 0.1)
+                    arrow.material.color.setHex(0x00ff88)
+                    arrow.material.opacity = 0.7
+                }
                 
                 // Bob the arrow
                 arrow.position.y = 1.5 + Math.sin(Date.now() * 0.004) * 0.2
